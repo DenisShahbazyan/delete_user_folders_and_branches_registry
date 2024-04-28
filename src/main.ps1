@@ -6,20 +6,28 @@ $scriptName = "clear.ps1"
 $clearScriptPath = Join-Path -Path $scriptDirectory -ChildPath $scriptName
 
 
+function Resize-Window {
+    $width = 120
+    $height = 30
+    $size = New-Object System.Management.Automation.Host.Size($width, $height)
+    $host.ui.rawui.windowsize = $size
+}
+
 function Start-Administrator {
     $isAdmin = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544"
     if (-not $isAdmin) {
         Start-Process powershell -ArgumentList " -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
         exit
     }
+    Resize-Window
 }
 
 # Установка PS Core 7.3.10
 function Install-PowerShellCore {
     $installerUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.10/PowerShell-7.3.10-win-x64.msi"
     $installerPath = "$env:TEMP\PowerShellInstaller.msi"
-    Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-    Start-Process -Wait -FilePath msiexec.exe -ArgumentList "/i $installerPath /quiet ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1"
+    Start-BitsTransfer -Source $installerUrl -Destination $installerPath
+    Start-Process -Wait -FilePath msiexec.exe -ArgumentList "/i $installerPath /quiet ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1"
     [Environment]::SetEnvironmentVariable('Path', "$($env:Path);$installPath", [System.EnvironmentVariableTarget]::Machine)
     Remove-Item -Path $installerPath -Force
 }

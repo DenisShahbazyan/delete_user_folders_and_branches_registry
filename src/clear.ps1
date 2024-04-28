@@ -1,17 +1,4 @@
-﻿$width = 120
-$height = 30
-$size = New-Object System.Management.Automation.Host.Size($width, $height)
-$host.ui.rawui.windowsize = $size
-
-# Проверка на администратора
-$isAdmin = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544"
-if (-not $isAdmin) {
-    Start-Process powershell -ArgumentList " -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
-    exit
-}
-
-
-$excludedNames = @(
+﻿$excludedNames = @(
     "Default", 
     "Public", 
     "Общие", 
