@@ -22,17 +22,25 @@ function Start-Administrator {
     Resize-Window
 }
 
-# Установка PS Core 7.3.10
-function Install-PowerShellCore {
-    $installerUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.10/PowerShell-7.3.10-win-x64.msi"
-    $installerPath = "$env:TEMP\PowerShellInstaller.msi"
+function Download-PowerShellCore {
+    param (
+        [string]$installerUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.10/PowerShell-7.3.10-win-x64.msi",
+        [string]$installerPath = "$env:TEMP\PowerShellInstaller.msi"
+    )
     Start-BitsTransfer -Source $installerUrl -Destination $installerPath
+    return $installerPath
+}
+
+function Install-PowerShellCore {
+    param (
+        [string]$installerPath,
+        [string]$installPath = "$env:ProgramFiles\PowerShell"
+    )
     Start-Process -Wait -FilePath msiexec.exe -ArgumentList "/i $installerPath /quiet ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1"
     [Environment]::SetEnvironmentVariable('Path', "$($env:Path);$installPath", [System.EnvironmentVariableTarget]::Machine)
     Remove-Item -Path $installerPath -Force
 }
 
-# Проверка версии PowerShell Core
 function Get-PowerShellCoreVersion {
     if (-not (Test-Path $powershellCorePath -PathType Leaf)) {
         return $null
@@ -45,11 +53,20 @@ function Get-PowerShellCoreVersion {
 
 function Start-CheckPowerShellCore {
     $currentVersion = Get-PowerShellCoreVersion
+    $msiInstallerPath = "\\10.0.88.98\21век\ТО\Денис Шахбазян\Очистка\PowerShell-7.3.10-win-x64.msi"
     
     If ($currentVersion -lt $minimumVersion) {
         Write-Host "PowerShell Core отсутствует или его версия ниже $minimumVersion."
         Write-Progress -Activity "Запускаю установку PowerShell Core $minimumVersion." -Status "Установка..."
-        Install-PowerShellCore
+        if (Test-Path -Path $msiInstallerPath) {
+            $tempInstallerPath = "$env:TEMP\PowerShellInstaller.msi"
+            Copy-Item -Path $msiInstallerPath -Destination $tempInstallerPath
+            Install-PowerShellCore -installerPath $tempInstallerPath
+        }
+        else {            
+            $installerPath = Download-PowerShellCore
+            Install-PowerShellCore -installerPath $installerPath
+        }
         Write-Progress -Activity "Установка PowerShell Core $(Get-PowerShellCoreVersion) завершена!" -Completed
     }
     else {
@@ -70,5 +87,3 @@ function Start-CleaningScript {
 Start-Administrator
 Start-CheckPowerShellCore
 Start-CleaningScript
-
-pause
